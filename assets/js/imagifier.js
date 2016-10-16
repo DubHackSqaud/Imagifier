@@ -3,9 +3,15 @@
 function findImages(elementId){
     var text = document.getElementById(elementId).value;
     var topics = getTopics(text);
-    
+}
+
+
+// takes an array of topic 
+// redirect the page and display the related images
+function sendSerializedTopics(topics){
+    console.log(topics);
+    topics = topics.documents[0].keyPhrases;
     var serializedTopics = serialize(topics);
-    
     // redirect
     location.replace("../result.html?"+serializedTopics);
 }
@@ -37,15 +43,63 @@ function getGetValues(url){
 // gets plain text 
 // return an array of topic
 function getTopics(text){
-    return ["cats", "dogs"];
+    $.ajax({
+        url: "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases?",
+        beforeSend: function(xhrObj){
+            // Request headers
+            xhrObj.setRequestHeader("Access-Control-Allow-Origin","*");
+            xhrObj.setRequestHeader("Content-Type","application/json");
+            xhrObj.setRequestHeader("Ocp-Apim-Subscription-Key","c56679e913274bf888cedc3806223644");
+        },
+        type: "POST",
+        // Request body
+        data: JSON.stringify({
+            "documents": [
+                {
+                    "language": "en",
+                    "id": "string",
+                    "text": text
+                }
+            ]
+        }),
+        
+    })
+    .done(function(data) {
+        console.log(data);
+        sendSerializedTopics(data);
+    })
+    .fail(function(err) {
+        console.log(err);
+    });
 }
 
 
 // gets an array of topics  
 // return an array of links to images
 function getImageLinks(topics){
-    return ["https://i.ytimg.com/vi/tntOCGkgt98/maxresdefault.jpg", "https://images-na.ssl-images-amazon.com/images/G/01/img15/pet-products/small-tiles/23695_pets_vertical_store_dogs_small_tile_8._CB312176604_.jpg"];
+    var imageLinks = [];
+    for(var i = 0; i < topics.length; i++){
+        var bingResponse = httpGet("https://api.cognitive.microsoft.com/bing/v5.0/images/search?count=1&q=" + topics[i] + "s&mkt=en-us");
+        var url = bingResponse.value[0].contentUrl;
+        //console.log(topics[i]);
+        imageLinks.push(url)
+    }
+    return imageLinks;
+    
 }
+
+// do a get sync request 
+function httpGet(theUrl)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "GET", theUrl, false ); // false for synchronous request
+    xmlHttp.setRequestHeader("Access-Control-Allow-Origin", "*");
+    xmlHttp.setRequestHeader("Ocp-Apim-Subscription-Key", "e7137b278c984b36b2f9df5cade2a74a");
+    
+    xmlHttp.send( null );
+    return JSON.parse(xmlHttp.responseText);
+}
+
 
 
 // gets an array of links 
@@ -66,3 +120,4 @@ function appendImage(url, elementId){
     var src = document.getElementById(elementId);
     src.appendChild(img);
 }
+
