@@ -2,15 +2,29 @@
 // 
 function findImages(elementId){
     var text = document.getElementById(elementId).value;
-    var topics = getTopics(text);
+    getTopics(text);
+    
+    
 }
 
+
+function filterTags(topics){
+    topics = topics.documents[0].keyPhrases;
+    var filteredTopics = [];
+    for(var i = 0; i < topics.length; i++){
+        if(topics[i].split(" ").length > 1){
+            filteredTopics.push(topics[i]);
+        }
+    }
+    return filteredTopics;
+}
 
 // takes an array of topic 
 // redirect the page and display the related images
 function sendSerializedTopics(topics){
-    console.log(topics);
-    topics = topics.documents[0].keyPhrases;
+    //console.log(topics);
+    //topics = topics.documents[0].keyPhrases;
+    topics = filterTags(topics);
     var serializedTopics = serialize(topics);
     // redirect
     location.replace("../result.html?"+serializedTopics);
@@ -34,11 +48,22 @@ function getGetValues(url){
     var valueArray = valueString.split("&");
     var topics = [];
     for(var i = 0; i < valueArray.length; i++){
-        var currentTopic = valueArray[i].split("=")[1];
+        var currentTopicEnc = valueArray[i].split("=")[1];
+        // debug
+        var topicArray = currentTopicEnc.split("%20");
+        var currentTopic = "";
+        for(var j = 0; j < topicArray.length; j++){
+            currentTopic += topicArray[j] + " ";
+        }
+        document.getElementById("tags").innerHTML += currentTopic + "<br/>";
         topics.push(currentTopic);
     }
+    
+    
+    
     return topics;
 }
+
 
 // gets plain text 
 // return an array of topic
@@ -79,7 +104,7 @@ function getTopics(text){
 function getImageLinks(topics){
     var imageLinks = [];
     for(var i = 0; i < topics.length; i++){
-        var bingResponse = httpGet("https://api.cognitive.microsoft.com/bing/v5.0/images/search?count=1&q=" + topics[i] + "s&mkt=en-us");
+        var bingResponse = httpGet("https://api.cognitive.microsoft.com/bing/v5.0/images/search?count=1&q=" + topics[topics.length - i - 1] + "s&mkt=en-us&safeSearch=Moderate");
         var url = bingResponse.value[0].contentUrl;
         //console.log(topics[i]);
         imageLinks.push(url)
@@ -94,7 +119,7 @@ function httpGet(theUrl)
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.open( "GET", theUrl, false ); // false for synchronous request
     xmlHttp.setRequestHeader("Access-Control-Allow-Origin", "*");
-    xmlHttp.setRequestHeader("Ocp-Apim-Subscription-Key", "e7137b278c984b36b2f9df5cade2a74a");
+    xmlHttp.setRequestHeader("Ocp-Apim-Subscription-Key", "db8ae05af21c41a6bd81e8614049bd78");//e7137b278c984b36b2f9df5cade2a74a
     
     xmlHttp.send( null );
     return JSON.parse(xmlHttp.responseText);
@@ -121,3 +146,33 @@ function appendImage(url, elementId){
     src.appendChild(img);
 }
 
+/*
+function getSumText(text){
+    $.ajax({
+        url: "https://api.aylien.com/api/v1/summarize",
+        beforeSend: function(xhrObj){
+            // Request headers
+            xhrObj.setRequestHeader("Access-Control-Allow-Origin","*");
+            xhrObj.setRequestHeader("Content-Type","application/json");
+            xhrObj.setRequestHeader("Accept", "application/json");
+            xhrObj.setRequestHeader("X-AYLIEN-TextAPI-Application-ID","d211aca9");
+            xhrObj.setRequestHeader("X-AYLIEN-TextAPI-Application-Key","ec91904f9ccf1f50344121e2cbe9f51e");
+        },
+        type: "POST",
+        // Request body
+        data: JSON.stringify({
+            "text": text,
+            "title": "ji",
+            "sentences_percentage": 25,
+        }),
+        
+    })
+    .done(function(data) {
+        console.log("SUMMZED");
+        console.log(data);
+        getTopics(data);
+    })
+    .fail(function(err) {
+        console.log(err);
+    });
+}*/
